@@ -20,8 +20,9 @@ pipelines:
               elastic_profile_id: golang-agent
               artifacts:
                 - test:
-                    source: coverage/
-                    destination: test-reports/
+                    source: coverage
+              tabs:
+                tests: coverage
               tasks:
                 - script: |
                     cat <<EOF > .netrc
