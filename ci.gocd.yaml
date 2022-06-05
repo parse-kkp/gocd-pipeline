@@ -1,0 +1,23 @@
+format_version: 10
+environment:
+  sit:
+
+pipelines:
+  tests:
+    group: service
+    materials:
+      saving:
+        git: git@github.com:kkp-dfs/dime-saving-account.git
+        branch: main
+    stages:
+      - unit_test:
+          clean_workspace: true
+          jobs:
+            unit_test:
+              elastic_profile_id: golang-agent
+              tasks:
+                - script: |
+                    export PATH=$HOME/go/bin:$(go env GOPATH)/bin:/go/bin:$PATH
+                    touch $HOME/.ack-ginkgo-rc
+                    make unit-test
+                    make generate-unitcoverage
