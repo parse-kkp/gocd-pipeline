@@ -16,13 +16,19 @@ pipelines:
       - unit_test:
           clean_workspace: true
           jobs:
+            lint:
+              elastic_profile_id: golang-agent
+              tasks:
+                - script: golangci-lint run --timeout 2m0s -E gosec
+                - script: golangci-lint run --timeout 2m0s -E gocyclo
+
             unit_test:
               elastic_profile_id: golang-agent
               artifacts:
                 - test:
                     source: coverage
               tabs:
-                tests: coverage
+                tests: coverage/index.html
               tasks:
                 - script: |
                     cat <<EOF > .netrc
@@ -39,11 +45,4 @@ pipelines:
                     make tools-install
                     make unit-test
                     make generate-unitcoverage
-                - exec: 
-                    command: genhtml
-                    arguments:
-                      - --rc
-                      - lcov_branch_coverage=1
-                      - -o
-                      - coverage
-                      - unitcoverage.lcov
+                - script: genhtml --rc lcov_branch_coverage=1 -o coverage unitcoverage.lcov
