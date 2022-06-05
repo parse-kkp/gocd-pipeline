@@ -11,6 +11,7 @@ pipelines:
     environment_variables:
       GOPRIVATE: github.com/kkp-dfs/*
       GOPROXY: https://nexus.mydime.tech/repository/go-proxy,direct
+      GH_ACCESS_TOKEN: '{{SECRET:[vault-gocd][gh_access_token]}}'
     stages:
       - unit_test:
           clean_workspace: true
@@ -21,13 +22,11 @@ pipelines:
                 - script: |
                     cat <<EOF > .netrc
                     machine github.com
-                      login {{SECRET:[vault][gh_access_token]}}
+                      login $GH_ACCESS_TOKEN
                       password x-oauth-basic
                     EOF
                     chmod 600 .netrc
                     cp .netrc $HOME/.netrc
-
-                    cat $HOME/.netrc
 
                     make tidy
                     make tools-install
