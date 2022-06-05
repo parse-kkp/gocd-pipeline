@@ -9,17 +9,22 @@ common:
     EOF
     chmod 600 .netrc
     cp .netrc $HOME/.netrc
-  deps_setup: &deps_install |
+  deps_setup: &deps_setup |
     touch $HOME/.ack-ginkgo-rc
     make tidy
     make tools-install
 
 pipelines:
+  parameters:
+    git_repo: dime-saving-account.git
   tests:
     group: service
     materials:
       saving:
-        scm: ee188c0c-f398-4b41-960e-10901377a4c0
+        git: https://github.com/kkp-dfs/#{git_repo}
+        branch: main
+        username: '{{SECRET:[vault-gocd][gh_access_toke]}}'
+        password: x-oauth-basic
     lock_behavior: none
     environment_variables:
       GOPRIVATE: github.com/kkp-dfs/*
