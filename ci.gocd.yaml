@@ -18,6 +18,10 @@ pipelines:
           jobs:
             unit_test:
               elastic_profile_id: golang-agent
+              artifacts:
+                - test:
+                    source: coverage/
+                    destination: test-reports/
               tasks:
                 - script: |
                     cat <<EOF > .netrc
@@ -34,3 +38,11 @@ pipelines:
                     make tools-install
                     make unit-test
                     make generate-unitcoverage
+                - exec: 
+                    command: genhtml
+                    arguments:
+                      - --rc
+                      - lcov_branch_coverage=1
+                      - -o
+                      - coverage
+                      - unitcoverage.lcov
