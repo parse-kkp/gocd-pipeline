@@ -4,8 +4,7 @@ pipelines:
     group: service
     materials:
       saving:
-        git: https://github.com/kkp-dfs/dime-saving-account.git
-        branch: main
+        type: configrepo
     stages:
       - unit_test:
           clean_workspace: true
