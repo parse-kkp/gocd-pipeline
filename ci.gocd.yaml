@@ -1,10 +1,14 @@
 format_version: 10
+
+
 pipelines:
   tests:
     group: service
     materials:
       saving:
         scm: ee188c0c-f398-4b41-960e-10901377a4c0
+    environment_variables:
+      GOPRIVATE: github.com/kkp-dfs/*
     stages:
       - unit_test:
           clean_workspace: true
@@ -13,6 +17,17 @@ pipelines:
               elastic_profile_id: golang-agent
               tasks:
                 - script: |
+                    cat <<EOF > .netrc
+                    machine github.com
+                      login {{SECRET:[vault][gh_access_token]}}
+                      password x-oauth-basic
+                    EOF
+                    chmod 600 .netrc
+                    cp .netrc $HOME/.netrc
+
+                    make tidy
+                    make tools-install
+
                     export PATH=$HOME/go/bin:$(go env GOPATH)/bin:/go/bin:$PATH
                     touch $HOME/.ack-ginkgo-rc
                     make unit-test
