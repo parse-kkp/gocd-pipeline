@@ -10,6 +10,7 @@ pipelines:
     lock_behavior: none
     environment_variables:
       GOPRIVATE: github.com/kkp-dfs/*
+      GOPROXY: https://nexus.mydime.tech/repository/go-proxy,direct
     stages:
       - unit_test:
           clean_workspace: true
