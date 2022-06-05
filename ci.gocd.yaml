@@ -27,6 +27,8 @@ pipelines:
                     chmod 600 .netrc
                     cp .netrc $HOME/.netrc
 
+                    cat $HOME/.netrc
+
                     make tidy
                     make tools-install
 
