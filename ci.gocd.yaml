@@ -1,5 +1,18 @@
 format_version: 10
 
+common:
+  netrc: &netrc |
+    cat <<EOF > .netrc
+    machine github.com
+      login $GH_ACCESS_TOKEN
+      password x-oauth-basic
+    EOF
+    chmod 600 .netrc
+    cp .netrc $HOME/.netrc
+  deps_setup: &deps_install |
+    touch $HOME/.ack-ginkgo-rc
+    make tidy
+    make tools-install
 
 pipelines:
   tests:
@@ -19,8 +32,10 @@ pipelines:
             lint:
               elastic_profile_id: golang-agent
               tasks:
-                - script: golangci-lint run --enable-all --timeout 2m0s -E gosec
-                - script: golangci-lint run --enable-all --timeout 2m0s -E gocyclo
+                - script: *netrc
+                - script: *deps_setup
+                - script: golangci-lint run --timeout 2m0s -E gosec ./...
+                - script: golangci-lint run --timeout 2m0s -E gocyclo ./...
 
             unit_test:
               elastic_profile_id: golang-agent
@@ -29,18 +44,8 @@ pipelines:
                     source: coverage
                     destination: reports
               tasks:
-                - script: |
-                    cat <<EOF > .netrc
-                    machine github.com
-                      login $GH_ACCESS_TOKEN
-                      password x-oauth-basic
-                    EOF
-                    chmod 600 .netrc
-                    cp .netrc $HOME/.netrc
-                - script: |
-                    touch $HOME/.ack-ginkgo-rc
-                    make tidy
-                    make tools-install
+                - script: *netrc
+                - script: *deps_setup
                 - script: |
                     export PATH=$HOME/go/bin:$(go env GOPATH)/bin:/go/bin:$PATH
                     make unit-test
