@@ -4,7 +4,7 @@ pipelines:
     group: service
     materials:
       saving:
-        type: configrepo
+        scm: ee188c0c-f398-4b41-960e-10901377a4c0
     stages:
       - unit_test:
           clean_workspace: true
