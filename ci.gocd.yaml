@@ -4,7 +4,7 @@ pipelines:
     group: service
     materials:
       saving:
-        git: git@github.com:kkp-dfs/dime-saving-account.git
+        git: https://github.com/kkp-dfs/dime-saving-account.git
         branch: main
     stages:
       - unit_test:
