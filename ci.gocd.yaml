@@ -17,11 +17,15 @@ common:
 pipelines:
   tests:
     group: service
+    parameters:
+      APPLICATION_NAME: saving-account
+      CLUSTER_PREFIX: dime
     materials:
       saving:
         scm: ee188c0c-f398-4b41-960e-10901377a4c0
     lock_behavior: none
     environment_variables:
+      ENVIRONMENT_NAME: sit
       GOPRIVATE: github.com/kkp-dfs/*
       GOPROXY: https://nexus.mydime.tech/repository/go-proxy,direct
       GH_ACCESS_TOKEN: '{{SECRET:[vault-gocd][gh_access_token]}}'
@@ -51,3 +55,31 @@ pipelines:
                     make unit-test
                     make generate-unitcoverage
                 - script: genhtml --rc lcov_branch_coverage=1 -o coverage unitcoverage.lcov
+
+            integration_test:
+              elastic_profile_id: sit.golang-agent
+              tasks:
+                - script: *netrc
+                - script: *deps_setup
+                - script: |
+                    git clone https://github.com/kkp-dfs/dime-helm.git
+                    cd dime-helm
+                    git fetch
+                    COMMIT_SHA=$(git rev-parse HEAD)
+                    yq eval-all '. as $item ireduce({}; . * $item)' values/#{APPLICATION_NAME}/values.yaml values/#{APPLICATION_NAME}/values-${ENVIRONMENT_NAME}.yaml > values.yaml
+                    VAULT_USERNAME=$(cat values.yaml | yq eval '.application.values.secrets.default.data.DB_USERNAME' - | sed -e 's/vault:/https:\/\/vault.mydime.tech\/v1\//g')
+                    VAULT_PASSWORD=$(cat values.yaml | yq eval '.application.values.secrets.default.data.DB_PASSWORD' - | sed -e 's/vault:/https:\/\/vault.mydime.tech\/v1\//g')
+                    USERNAME_KEY=$(echo $VAULT_USERNAME | cut -d '#' -f2)
+                    PASSWORD_KEY=$(echo $VAULT_PASSWORD | cut -d '#' -f2)
+                    JWT=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+                    echo "{\"role\":\"kubernetes-actions-runner\",\"jwt\":\"$JWT\"}" > payload.json
+                    TOKEN=$(curl -d @payload.json https://vault.mydime.tech/v1/auth/kubernetes/actions-runner/#{CLUSTER_PREFIX}-${ENVIRONMENT_NAME}/login | jq -r '.auth.client_token')
+                    VAULT_URL=https://vault.mydime.tech/v1/secrets/data/database$(echo #{CLUSTER_PREFIX}-${ENVIRONMENT_NAME} | sed -e 's/dime-/\//g' | sed -e 's/-/\//g')
+                    DB=$(curl -H "X-Vault-Token:$TOKEN" $VAULT_URL)
+                    DB_HOST=$(cat values.yaml | yq eval '.application.values.configmaps.default.data.DB_HOST' -)
+                    DB_PORT=$(cat values.yaml | yq eval '.application.values.configmaps.default.data.DB_PORT' -)
+                    DB_NAME=$(cat values.yaml | yq eval '.application.values.configmaps.default.data.DB_DATABASE' -)-${COMMIT_SHA}
+                    DB_USER=$(cat values.yaml | yq eval '.application.values.configmaps.default.data.DB_DATABASE' -)-${COMMIT_SHA}
+                    DB_PASS=${COMMIT_SHA}
+                    DB_ADMIN_USER=$(echo $DB | jq -r '.data.data.username')
+                    DB_ADMIN_PASS=$(echo $DB | jq -r '.data.data.password')
